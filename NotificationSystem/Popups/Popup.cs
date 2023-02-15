@@ -11,7 +11,7 @@ namespace ATBS.Notifications
     {
         #region Variables
         public Dictionary<string, Action> Actions { get => actions; private set => actions = value; } // Actions stored by this popup
-        public List<String> Data {get => data; private set => data = value;} // Data stored by this popup
+        public List<string> Data {get => data; private set => data = value;} // Data stored by this popup
         public PopupType Type { get; private set; } // this popups type
         public int Layer { get; private set; } // layer at which it should be displayed
         public PopupManager PopupManager { get; private set; } // reference to PopupManager
@@ -21,7 +21,7 @@ namespace ATBS.Notifications
         private Canvas parentCanvas;
         private float minX, maxX, minY, maxY;
         private Dictionary<string, Action> actions = new();
-        public List<String> data = new();
+        public List<string> data = new();
         #endregion
         #region Methods
         /// <summary>

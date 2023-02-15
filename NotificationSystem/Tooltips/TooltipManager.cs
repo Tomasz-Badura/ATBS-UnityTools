@@ -1,15 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
+using ATBS.Core;
 using ATBS.Extensions;
 using UnityEngine;
 namespace ATBS.Notifications
 {
-    public class TooltipManager : MonoBehaviour
+    public class TooltipManager : ScriptableObject
     {
         #region Variables
         public Tooltip DefaultTooltip { get; private set; }
-        public Dictionary<string, Tooltip> Tooltips { get => tooltips; private set => tooltips = value; }
-        private Dictionary<string, Tooltip> tooltips = new();
+        public RuntimeSet<Tooltip> Tooltips { get; private set; }
         [SerializeField] private GameObject defaultTooltipObject;
         [SerializeField] private TooltipPosition defaultTooltipPosition;
         #endregion
@@ -19,11 +17,11 @@ namespace ATBS.Notifications
         /// </summary>
         /// <param name="tooltipName">Name of the tooltip to find</param>
         /// <returns>The found tooltip or null</returns>
-        public Tooltip GetTooltip(string tooltipName)
+        public Tooltip GetTooltip(string tooltipName) => Tooltips.Items.Find(tip => tip.Name.Clean() == tooltipName.Clean());
+        public bool TryGetTooltip(string tooltipName, out Tooltip tooltip)
         {
-            tooltipName = tooltipName.Clean();
-            tooltips.TryGetValue(tooltipName, out Tooltip tooltip);
-            return tooltip;
+            tooltip = Tooltips.Items.Find(tip => tip.Name.Clean() == tooltipName.Clean());
+            return tooltip == null;
         }
 
         /// <summary>
@@ -37,10 +35,15 @@ namespace ATBS.Notifications
         public void ShowTooltip(string tooltipName, Transform parent, TooltipPosition position, string displayText = "", Vector2 offset = default(Vector2))
         {
             tooltipName = tooltipName.Clean();
-            if (!tooltips.TryGetValue(tooltipName, out Tooltip tooltip)) { Debug.LogError("Tooltip with name: " + tooltipName + ", doesn't exist."); return; }
+            if (!TryGetTooltip(tooltipName, out Tooltip tooltip))
+            {
+                this.LogError("Tooltip with name: " + tooltipName + ", doesn't exist.");
+                return;
+            }
+
             PositionTooltip(tooltip.transform, parent, position, offset);
             tooltip.DisplayText = displayText;
-            if(tooltip.NewParentCheck()) tooltip.NewParent();
+            if (tooltip.NewParentCheck()) tooltip.NewParent();
             tooltip.Show();
         }
 
@@ -50,8 +53,10 @@ namespace ATBS.Notifications
         /// <param name="parent">Transform of the object to position the tooltip relative to.</param>
         public void ShowDefaultTooltip(Transform parent)
         {
+            if (DefaultTooltip == null) return;
+
             PositionTooltip(DefaultTooltip.transform, parent, defaultTooltipPosition, Vector2.zero);
-            if(DefaultTooltip.NewParentCheck()) DefaultTooltip.NewParent();
+            if (DefaultTooltip.NewParentCheck()) DefaultTooltip.NewParent();
             DefaultTooltip.Show();
         }
 
@@ -61,8 +66,8 @@ namespace ATBS.Notifications
         /// <param name="displayText"></param>
         public void ChangeDefaultTooltipText(string displayText)
         {
+            if (DefaultTooltip == null) return;
             DefaultTooltip.DisplayText = displayText;
-            DefaultTooltip.Refresh();
         }
 
         /// <summary>
@@ -72,7 +77,11 @@ namespace ATBS.Notifications
         public void HideTooltip(string tooltipName)
         {
             tooltipName = tooltipName.Clean();
-            if (!tooltips.TryGetValue(tooltipName, out Tooltip tooltip)) { Debug.LogError("Tooltip with name: " + tooltipName + ", doesn't exist."); return; }
+            if (TryGetTooltip(tooltipName, out Tooltip tooltip))
+            {
+                Debug.LogError("Tooltip with name: " + tooltipName + ", doesn't exist.");
+                return;
+            }
             tooltip.Hide();
         }
 
@@ -81,7 +90,7 @@ namespace ATBS.Notifications
         /// </summary>
         public void HideDefaultTooltip()
         {
-            DefaultTooltip.Hide();
+            DefaultTooltip?.Hide();
         }
 
         /// <summary>
@@ -109,77 +118,56 @@ namespace ATBS.Notifications
             switch (position)
             {
                 case TooltipPosition.TopLeft:
-                {
-                    tooltip.transform.localPosition = new Vector3(-parent.rect.width / 2 - size.x / 2, parent.rect.height / 2 + size.y / 2);
-                    break;
-                }
+                    {
+                        tooltip.transform.localPosition = new Vector3(-parent.rect.width / 2 - size.x / 2, parent.rect.height / 2 + size.y / 2);
+                        break;
+                    }
                 case TooltipPosition.Top:
-                {
-                    tooltip.transform.localPosition = new Vector3(0, parent.rect.height / 2 + size.y / 2);
-                    break;
-                }
+                    {
+                        tooltip.transform.localPosition = new Vector3(0, parent.rect.height / 2 + size.y / 2);
+                        break;
+                    }
                 case TooltipPosition.TopRight:
-                {
-                    tooltip.transform.localPosition = new Vector3(parent.rect.width / 2 + size.x / 2, parent.rect.height / 2 + size.y / 2);
-                    break;
-                }
+                    {
+                        tooltip.transform.localPosition = new Vector3(parent.rect.width / 2 + size.x / 2, parent.rect.height / 2 + size.y / 2);
+                        break;
+                    }
                 case TooltipPosition.MiddleLeft:
-                {
-                    tooltip.transform.localPosition = new Vector3(-parent.rect.width / 2 - size.x / 2, 0);
-                    break;
-                }
+                    {
+                        tooltip.transform.localPosition = new Vector3(-parent.rect.width / 2 - size.x / 2, 0);
+                        break;
+                    }
                 case TooltipPosition.Middle:
-                {
-                    tooltip.transform.localPosition = new Vector3(0, 0);
-                    break;
-                }
+                    {
+                        tooltip.transform.localPosition = new Vector3(0, 0);
+                        break;
+                    }
                 case TooltipPosition.MiddleRight:
-                {
-                    tooltip.transform.localPosition = new Vector3(parent.rect.width / 2 + size.x / 2, 0);
-                    break;
-                }
+                    {
+                        tooltip.transform.localPosition = new Vector3(parent.rect.width / 2 + size.x / 2, 0);
+                        break;
+                    }
                 case TooltipPosition.BottomLeft:
-                {
-                    tooltip.transform.localPosition = new Vector3(-parent.rect.width / 2 - size.x / 2, -parent.rect.height / 2 - size.y / 2);
-                    break;
-                }
+                    {
+                        tooltip.transform.localPosition = new Vector3(-parent.rect.width / 2 - size.x / 2, -parent.rect.height / 2 - size.y / 2);
+                        break;
+                    }
                 case TooltipPosition.Bottom:
-                {
-                    tooltip.transform.localPosition = new Vector3(0, -parent.rect.height / 2 - size.y / 2);
-                    break;
-                }
+                    {
+                        tooltip.transform.localPosition = new Vector3(0, -parent.rect.height / 2 - size.y / 2);
+                        break;
+                    }
                 case TooltipPosition.BottomRight:
-                {
-                    tooltip.transform.localPosition = new Vector3(parent.rect.width / 2 + size.x / 2, -parent.rect.height / 2 - size.y / 2);
-                    break;
-                }
+                    {
+                        tooltip.transform.localPosition = new Vector3(parent.rect.width / 2 + size.x / 2, -parent.rect.height / 2 - size.y / 2);
+                        break;
+                    }
                 default:
                     Debug.LogError(position + ", this tooltip position is not defined");
                     return false;
             }
             tooltip.localPosition += new Vector3(offset.x, offset.y);
             return true;
-        }
-
-        private void Start()
-        {
-            DefaultTooltip = defaultTooltipObject.GetComponent<Tooltip>();
-            if (DefaultTooltip == null) Debug.LogError("Default tooltip is not set");
-
-            GetTooltips();
-        }
-        
-        /// <summary>
-        /// Fills the tooltips list.
-        /// </summary>
-        private void GetTooltips()
-        {
-            foreach (Transform child in transform)
-            {
-                Tooltip tooltip = child.GetComponent<Tooltip>();
-                if (tooltip != null)
-                    tooltips.Add(tooltip.Name, tooltip);
-            }
         }
         #endregion
     }

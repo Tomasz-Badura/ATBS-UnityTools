@@ -1,90 +1,63 @@
-using UnityEngine;
 using System.Collections.Generic;
+using ATBS.Extensions;
+using UnityEngine;
+
 namespace ATBS.MenuSystem
 {
-    [DisallowMultipleComponent]
-    public class InputForm : MonoBehaviour
+    [CreateAssetMenu(menuName = "MenuSystem/InputForm")]
+    public class InputForm : ScriptableObject
     {
-        #region variables
-        [Tooltip("Inputs that this form consists of, leave empty to fill with inputs from InputsLocation")]
-        [SerializeField] private List<InputWrapper> Inputs = new();
+        [SerializeField] List<FormInputData> inputs;
 
-        [Tooltip("Location to search for inputs if the Inputs list is empty")]
-        [SerializeField] private Transform InputsLocation;
-        public Dictionary<string, string> InputValues { get; private set; }
-        #endregion
-        #region methods
-        private void Awake()
+        public List<SaveableFormInputData> SaveInputs()
         {
-            InputValues = new();
-            if (InputsLocation == null) InputsLocation = transform;
-            if (Inputs.Count == 0) GetInputs();
-        }
-        
-        /// <summary>
-        /// fills the Inputs list
-        /// </summary>
-        private void GetInputs()
-        {
-            Inputs.Clear();
-            foreach (Transform child in InputsLocation)
-            {
-                InputWrapper input = child.GetComponent<InputWrapper>();
-                if (input == null)
-                    continue;
-                Inputs.Add(input);
-            }
+            List<SaveableFormInputData> result = new();
+            foreach (FormInputData input in inputs)
+                result.Add(input.Save());
+
+            return result;
         }
 
-        /// <summary>
-        /// fills the dictionary with the form inputs
-        /// </summary>
-        public void UpdateDictionary()
+        public void LoadInputs(List<SaveableFormInputData> saved)
         {
-            InputValues.Clear();
-            foreach (InputWrapper input in Inputs)
+            foreach (FormInputData input in inputs)
             {
-                InputValues.Add(input.Id, input.GetValue());
-            }
-        }
-
-        /// <summary>
-        /// Validates all the inputs in the form.
-        /// </summary>
-        /// <param name="validationResult">The validation result. If the form is valid, this will be set to "True". If the form is invalid, this will contain a tag describing the error.</param>
-        /// <returns>True if the form is valid, false if the form is invalid.</returns>
-        public bool ValidateForm(out string validationResult)
-        {
-            foreach (InputWrapper input in Inputs)
-            {
-                if(!input.ValidateInput(out validationResult))
+                SaveableFormInputData save = saved.Find(save => save.id.Clean() == input.Id.Clean());
+                if (save == null)
                 {
-                    return false;
+                    Debug.LogWarning("couldn't find saved form input for " + input);
+                    continue;
                 }
+                input.Load(save);
             }
-            validationResult = "True";
+        }
+
+        public void SetAllToDefault()
+        {
+            foreach (FormInputData input in inputs)
+                input.SetCurrentToDefault();
+        }
+
+        public bool ValidateForm()
+        {
+            foreach (FormInputData input in inputs)
+            {
+                if (!input.Validate()) return false;
+            }
             return true;
         }
 
-        /// <summary>
-        /// Validates all the inputs in the form.
-        /// </summary>
-        /// <returns>True if the form is valid, false if the form is invalid.</returns>
-        public bool ValidateForm()
+        public FormInputData GetFormInputData(string id) => inputs.Find(input => input.Id.Clean() == id.Clean());
+        
+        public string GetFormInputString(string id)
         {
-            return ValidateForm(out string validationResult);
+            FormInputData input = inputs.Find(input => input.Id.Clean() == id.Clean());
+            if (input == null)
+            {
+                Debug.LogWarning("Couldn't find form input with id: " + id);
+                return string.Empty;
+            }
+            return input.CurrentInput;
         }
-
-        /// <summary>
-        /// Gets or sets the value of the input with the specified key in the `InputValues` dictionary.
-        /// </summary>
-        /// <param name="key">The key of the input to get or set.</param>
-        /// <returns>The value of the input with the specified key, or an empty string if the key does not exist in the dictionary.</returns>
-        public string this[string key]
-        {
-            get => InputValues.ContainsKey(key) ? InputValues[key] : string.Empty;
-            set => InputValues[key] = value;
-        }
-        #endregion
     }
 }

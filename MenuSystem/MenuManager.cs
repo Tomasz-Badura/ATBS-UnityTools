@@ -1,62 +1,40 @@
-/*
-MENU SYSTEM
-creator: Tomasz Badura
-Version 1.0.0
-
-DESCRIPTION:
-    This menu system was created for providing tools for creating new menus
-    and menu functionality. It consists of:
-
-    1. Element handling
-    ( Selectable or non selectable elements that hold small amount of data and display it
-    in usually list-like format. )
-
-    2. Input handling
-    ( Handling player input from input fields and other input ways. Creating forms to easily read and validate
-    data given by the player. )
-
-    3. Menu manager and menu class
-    ( Changing menus and calling menu specific events. Creating new menus in a consistent and easy way )
-
-    aswell as other tools for working with menu UI and optional examples.
-
-REQUIREMENTS:
-- TextMeshPro
-
-DOCUMENTATION:
-Work in progress...
-
-*/
+// MENU SYSTEM
+// creator: Tomasz Badura
+// Version 1.0.0
+// DOCUMENTATION:
+// Work in progress...
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using ATBS.Extensions;
-
+using ATBS.Core;
 namespace ATBS.MenuSystem
 {
-    [DisallowMultipleComponent]
-    public class MenuManager : MonoBehaviour
+    [CreateAssetMenu(menuName = "MenuSystem/MenuManager")]
+    public class MenuManager : ScriptableObject
     {
         #region Variables
-        [Tooltip("Parent location of menus")]
-        [SerializeField] private Transform menusLocation;
         public bool AreActive { get; private set; } // is any menu active
-        public Menu Current { get; private set; } // Currently active menu
-        public Menu Last { get; private set; } // Last active menu
-        private List<Menu> menus = new List<Menu>();
+        public Menu Current { get; private set; }
+        public Menu Last { get; private set; }
+        [field: SerializeField] public RuntimeSet<Menu> Menus { get; private set; }
+        [SerializeField] private string defaultMenu;
         #endregion
         #region events
-        public event EventHandler OnMenusEnabled; // called when opening menu from all menus closed state
-        public event EventHandler OnMenusDisabled; // called when all menus closed
+        public delegate void MenuHandler();
+        public event MenuHandler OnMenusEnabled;
+        public event MenuHandler OnMenusDisabled;
         #endregion
         #region methods
-        private void Start()
+
+        /// <summary>
+        /// Should be called at Awake in the scene containing the defaultMenu
+        /// </summary>
+        public void Setup()
         {
-            if (menusLocation == null) menusLocation = transform;
-            GetMenus();
             DisableAll();
+            ChangeMenu(defaultMenu);
         }
 
         /// <summary>
@@ -66,9 +44,9 @@ namespace ATBS.MenuSystem
         /// <returns> found menu or null if no menu was found </returns>
         public Menu GetMenu(string menuName)
         {
-            foreach (Menu menu in menus)
+            foreach (Menu menu in Menus.Items)
             {
-                if (menu.Name != menuName.Clean())
+                if (menu.Name.Clean() != menuName.Clean())
                     continue;
                 return menu;
             }
@@ -85,9 +63,9 @@ namespace ATBS.MenuSystem
         {
             // Find menu
             Menu found = null;
-            foreach (Menu menu in menus)
+            foreach (Menu menu in Menus.Items)
             {
-                if (menu.Name != menuName.Clean())
+                if (menu.Name.Clean() != menuName.Clean())
                     continue;
                 found = menu;
                 break;
@@ -96,7 +74,7 @@ namespace ATBS.MenuSystem
             // If not found
             if (found == null)
             {
-                Debug.LogWarning("Couldn't find menu with that name, make sure every menu name is normalized");
+                Debug.LogWarning("Couldn't find menu with that name: " + menuName);
                 return found;
             }
 
@@ -114,11 +92,40 @@ namespace ATBS.MenuSystem
             // if no menu active, trigger menu enabled
             if (!AreActive)
             {
-                OnMenusEnabled?.Invoke(this, EventArgs.Empty);
+                OnMenusEnabled?.Invoke();
                 AreActive = true;
             }
 
             return Current;
+        }
+
+        public void ChangeMenu(Menu menu)
+        {
+            if (menu == null)
+            {
+                Debug.LogError("menu can't be null");
+                return;
+            }
+            // Update last menu
+            Last = Current;
+            if(!(Last == null ? true : Last.Equals(null)))
+            {
+                Last.Unload();
+                Last.gameObject.SetActive(false);
+            }
+            // Update current menu
+            Current = menu;
+            Current.gameObject.SetActive(true);
+            Current.Load();
+            if (Last?.Previous != Current)
+                Current.Previous = Last;
+
+            // if no menu active, trigger menu enabled
+            if (!AreActive)
+            {
+                OnMenusEnabled.Invoke();
+                AreActive = true;
+            }
         }
 
         /// <summary>
@@ -131,7 +138,7 @@ namespace ATBS.MenuSystem
             {
                 Current.Unload();
                 Current.gameObject.SetActive(false);
-                OnMenusDisabled?.Invoke(this, EventArgs.Empty);
+                OnMenusDisabled.Invoke();
             }
             Reset();
         }
@@ -188,28 +195,14 @@ namespace ATBS.MenuSystem
             elements = elements.OrderBy<Element, object>(e =>
             {
                 string value = e[key];
-                // Try to parse the value as a date.
                 if (DateTime.TryParse(value, out DateTime dateValue))
-                {
-                    // If the value is a valid date, sort by value.
                     return dateValue;
-                }
-                // Try to parse the value as a number.
                 else if (int.TryParse(value, out int intValue))
-                {
-                    // If the value is a valid number, sort by value.
                     return intValue;
-                }
                 else if (float.TryParse(value, out float floatValue))
-                {
-                    // If the value is a valid float, sort by value.
                     return floatValue;
-                }
-                // else, sort alphabetically.
-                else
-                {
+                else // sort alphabetically.
                     return value;
-                }
             }).ToArray();
 
             // Reverse the elements order
@@ -226,27 +219,11 @@ namespace ATBS.MenuSystem
         }
 
         /// <summary>
-        /// Fills the menus list
-        /// </summary>
-        private void GetMenus()
-        {
-            menus.Clear();
-            foreach (Transform child in menusLocation)
-            {
-                Menu menu = child.GetComponent<Menu>();
-                if (menu == null)
-                    continue;
-                menu.MenuManager = this;
-                menus.Add(menu);
-            }
-        }
-
-        /// <summary>
         /// Disables all of the menus
         /// </summary>
         private void DisableAll()
         {
-            foreach (Menu menu in menus)
+            foreach (Menu menu in Menus.Items)
             {
                 menu.gameObject.SetActive(false);
             }

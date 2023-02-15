@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 using UnityEngine.UI;
-using System.Collections;
 
 namespace ATBS.Notifications
 {
-    public class PopupManager : MonoBehaviour
+    public class PopupManager : ScriptableObject
     {
         #region Variables
         [field: SerializeField]public Transform QueuePopupLocation { get; private set; } // Location for queued popups, should have a canvas.

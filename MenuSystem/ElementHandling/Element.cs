@@ -10,7 +10,7 @@ namespace ATBS.MenuSystem
         #region variables
         public Dictionary<string, string> Data { get; private set; } = new(); // data of this element
         public ElementType Type { get; private set; } // type of element
-        public bool IsSelectable {get; protected set;}// can the element be selected
+        public bool IsSelectable { get; protected set; }// can the element be selected
         private IElementHandler reference;// reference to the element handler
         #endregion
         #region virtual methods
@@ -37,22 +37,22 @@ namespace ATBS.MenuSystem
         /// <summary>
         /// custom logic for right clicking an element
         /// </summary>
-        public virtual void OnRightClick(){}
+        public virtual void OnRightClick() { }
 
         /// <summary>
         /// custom logic for left clicking an element
         /// </summary>
-        public virtual void OnLeftClick(){}
-        
+        public virtual void OnLeftClick() { }
+
         /// <summary>
         /// custom logic for pointer entering an element
         /// </summary>
-        public virtual void OnPointerEnter(PointerEventData eventData){}
+        public virtual void OnPointerEnter(PointerEventData eventData) { }
 
         /// <summary>
         /// custom logic for pointer exiting an element
         /// </summary>
-        public virtual void OnPointerExit(PointerEventData eventData){}
+        public virtual void OnPointerExit(PointerEventData eventData) { }
         #endregion
         #region methods
         /// <summary>

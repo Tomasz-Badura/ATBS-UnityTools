@@ -3,16 +3,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 using ATBS.Extensions;
-
+using ATBS.Core;
 namespace ATBS.MenuSystem
 {
-    [RequireComponent(typeof(Canvas)), DisallowMultipleComponent]
+    [RequireComponent(typeof(Canvas))]
     public abstract class Menu : MonoBehaviour
     {
         #region variables
         [field: SerializeField] public string Name { get; protected set; } // name identificator for this menu
-        public MenuManager MenuManager { protected get; set; }
         public Menu Previous { get; set; } // menu that lead to opening this menu
+        [SerializeField] protected MenuManager menuManager;
         [SerializeField] private List<Button> Buttons = new(); // list of all buttons in a menu
         [SerializeField] private int sortLayer = 0;
         private Canvas canvas;
@@ -51,15 +51,7 @@ namespace ATBS.MenuSystem
         /// <returns> found button or null </returns>
         protected Button GetButton(string buttonName)
         {
-            if (buttonName == null) return null;
-            foreach (Button button in Buttons)
-            {
-                if (button.gameObject.name.Clean() == buttonName.Clean())
-                {
-                    return button;
-                }
-            }
-            return null;
+            return Buttons.Find(button => button.gameObject.name.Clean() == buttonName.Clean());
         }
         #endregion
         #region virtual methods
@@ -67,7 +59,7 @@ namespace ATBS.MenuSystem
         /// called on every opening of the menu
         /// </summary>
         public virtual void Load() { Refresh(); }
-        
+
         /// <summary>
         /// called on every closing of the menu
         /// </summary>
@@ -80,8 +72,8 @@ namespace ATBS.MenuSystem
 
         protected virtual void Awake()
         {
-            Name = Name.Clean();
-            if (String.IsNullOrWhiteSpace(Name)) Debug.LogError("Menu name of: " + gameObject.name + ", is empty. Make sure to include only alphabet letters.");
+            menuManager.Menus.Add(this);
+            if (string.IsNullOrWhiteSpace(Name.Clean())) Debug.LogError("Menu name of: " + gameObject.name + ", is empty. Make sure to include only alphabet letters.");
             SetupCanvas();
         }
 
@@ -97,14 +89,15 @@ namespace ATBS.MenuSystem
             canvas.sortingOrder = sortLayer;
             // Canvas scaler
             CanvasScaler canvasScaler = GetComponent<CanvasScaler>();
-            if(canvasScaler == null) canvasScaler = gameObject.AddComponent<CanvasScaler>();
+            if (canvasScaler == null) canvasScaler = gameObject.AddComponent<CanvasScaler>();
             canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             canvasScaler.referenceResolution = new Vector2(1920f, 1080f);
             // Graphic raycaster
             GraphicRaycaster graphicRaycaster = GetComponent<GraphicRaycaster>();
-            if(graphicRaycaster == null)
+            if (graphicRaycaster == null)
                 gameObject.AddComponent<GraphicRaycaster>();
         }
+        protected virtual void OnDestroy() => menuManager.Menus.Remove(this);
         #endregion
     }
 }

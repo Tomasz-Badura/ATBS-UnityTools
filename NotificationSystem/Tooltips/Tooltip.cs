@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using ATBS.Extensions;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -11,10 +8,21 @@ namespace ATBS.Notifications
     {
         #region Variables
         [field: SerializeField] public string Name { get; private set; }
-        public string DisplayText { get; set; }
+        public string DisplayText 
+        { 
+            get => displayText; 
+            set
+            {
+                displayText = value; 
+                Refresh(); 
+            }
+        }
+        
         public bool IsShowed { get; protected set; }
         public bool Interactable { get; protected set; }
+        [SerializeField] private TooltipManager tooltipManager;
         private Transform LastParent;
+        private string displayText;
         #endregion
         #region Methods
         protected virtual void Awake()
@@ -24,9 +32,9 @@ namespace ATBS.Notifications
 
             IsShowed = false;
             Interactable = false;
-
+            
             Name = Name.Clean();
-            if (String.IsNullOrWhiteSpace(Name)) Debug.LogError("Tooltip name of: " + gameObject.name + ", is empty. Make sure to include only alphabet letters.");
+            if (string.IsNullOrWhiteSpace(Name)) Debug.LogError("Tooltip name of: " + gameObject.name + ", is empty. Make sure to include only alphabet letters.");
         }
 
         public bool NewParentCheck()
@@ -41,7 +49,7 @@ namespace ATBS.Notifications
         /// <summary>
         /// Called when showing a tooltip.
         /// </summary>
-        public virtual void Show() { IsShowed = true; Refresh(); }
+        public virtual void Show() { IsShowed = true; }
 
         /// <summary>
         /// Called when hiding a tooltip.
@@ -49,7 +57,7 @@ namespace ATBS.Notifications
         public virtual void Hide() { IsShowed = false; }
 
         /// <summary>
-        /// called on every refresh of the tooltip.
+        /// called on every change of displayText of the tooltip.
         /// </summary>
         public virtual void Refresh() { }
 
@@ -63,6 +71,9 @@ namespace ATBS.Notifications
         public virtual void OnPointerExit(PointerEventData eventData) { if (Interactable) Hide(); }
 
         public virtual void OnPointerClick(PointerEventData eventData) { }
+
+        private void OnEnable() => tooltipManager.Tooltips.Add(this);
+        private void OnDisable() => tooltipManager.Tooltips.Remove(this);
         #endregion
     }
 }

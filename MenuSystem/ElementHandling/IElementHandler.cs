@@ -5,7 +5,7 @@ namespace ATBS.MenuSystem
     /// <summary>
     public interface IElementHandler
     {
-        public Element SelectedElement {get; set;}
-        public bool IgnoreDeselect {get; set;}
+        public Element SelectedElement { get; set; }
+        public bool IgnoreDeselect { get; set; }
     }
 }

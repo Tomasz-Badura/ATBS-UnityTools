@@ -1,6 +1,6 @@
 namespace ATBS.MenuSystem
 {
-    // Add here your own element types
+    // Add here your own element type identifiers
 
     /// <summary>
     /// Identificator for the element, used to distinguish elements from each other
@@ -9,7 +9,7 @@ namespace ATBS.MenuSystem
     public enum ElementType
     {
         Placeholder01,
-        Placeholder02,
+        SaveFile,
         Placeholder03,
         Placeholder04,
         Placeholder05
